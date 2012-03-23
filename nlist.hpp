@@ -19,9 +19,16 @@
 #include <boost/mpl/front_fwd.hpp>
 #include <boost/mpl/push_front_fwd.hpp>
 #include <boost/mpl/pop_front_fwd.hpp>
+#include <boost/mpl/push_back_fwd.hpp>
+#include <boost/mpl/pop_back_fwd.hpp>
+#include <boost/mpl/back_fwd.hpp>
+#include <boost/mpl/clear_fwd.hpp>
+#include <boost/mpl/insert_fwd.hpp>
+#include <boost/mpl/insert_range_fwd.hpp>
 
 #include <boost/mpl/int.hpp>
 #include <boost/mpl/bool.hpp>
+#include <boost/mpl/integral_c.hpp>
 
 namespace nl {
 
@@ -30,6 +37,11 @@ struct nlist_tag {};
 template<typename... Args>
 struct nlist {
   typedef nlist_tag tag;
+};
+
+template<typename Integral, long... Args> 
+struct nlist_c {
+  typedef nlist< boost::mpl::integral_c< Integral, Args >... > type;
 };
 
 typedef nlist<> empty_nlist;
@@ -117,6 +129,31 @@ struct pop_front_impl< nl::nlist_tag > {
   };
 };
 
+template<>
+struct clear_impl< nl::nlist_tag > {
+  template<typename> struct apply {
+    typedef nl::empty_nlist type;
+  };
+};
+
+template<>
+struct push_back_impl< nl::nlist_tag > {
+  template<typename, typename> struct apply;
+  template<typename... Args, typename T>
+  struct apply< nl::nlist<Args...>, T > {
+    typedef nl::nlist<Args..., T> type;
+  };
+};
+
+// cannot have a const time pop_back
+// template<>
+// struct pop_back_imp< nl::nlist_tag > {
+//   template<typename> struct apply;
+//   template<typename... Args>
+//   struct apply< nl::list<Args...>, T > {
+//     typedef nl::nlist<Args..., T> type;
+//   };
+// };
 
 }}
 

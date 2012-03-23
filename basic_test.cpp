@@ -6,6 +6,9 @@
 #include <boost/mpl/front.hpp>
 #include <boost/mpl/push_front.hpp>
 #include <boost/mpl/pop_front.hpp>
+#include <boost/mpl/push_back.hpp>
+#include <boost/mpl/clear.hpp>
+
 
 #include <type_traits>
 
@@ -45,6 +48,26 @@ int main()
   typedef nl::nlist<float, char> B;
   static_assert(std::is_same< push_front<B, int>::type, A >::value, "push_front");
   static_assert(std::is_same< pop_front<A>::type, B >::value, "pop_front");
+
+  // push_back 
+  typedef nl::nlist<int, float> C;
+  static_assert(std::is_same< push_back<C, char>::type, A >::value, "push_back");
+//  static_assert(std::is_same< pop_front<A>::type, B >::value, "pop_front");
+
+  // clear
+  static_assert(std::is_same< clear<B>::type, empty_nlist >::value, "clear");
+  static_assert(std::is_same< clear<empty_nlist>::type, empty_nlist >::value, "clear");
+
+  // insert
+
+  typedef nlist_c<int,0,1,3,4,5,6,7,8,9> numbers;
+  typedef nlist_c<int,0,1,3,4,5,6,7,8,9>::type numbers2;
+
+  // typedef find< numbers,integral_c<int,3> >::type pos;
+  // typedef insert< numbers,pos,integral_c<int,2> >::type range;
+
+  // BOOST_MPL_ASSERT_RELATION( size<range>::value, ==, 10 );
+  // BOOST_MPL_ASSERT(( equal< range,range_c<int,0,10> > ));
 
   return 0;
 }
