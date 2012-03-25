@@ -32,6 +32,8 @@
 #include <boost/mpl/integral_c.hpp>
 #include <boost/mpl/eval_if.hpp>
 #include <boost/mpl/identity.hpp>
+#include <boost/mpl/size_t.hpp>
+#include <boost/mpl/prior.hpp>
 #include <boost/type_traits/is_same.hpp>
 
 namespace nl {
@@ -75,38 +77,54 @@ struct concat< nlist<Args...>, nlist<Args2...> > {
   typedef nlist<Args..., Args2...> type;
 };
 
-template<typename, typename, typename, bool> struct take_impl;
+template<typename, typename, typename> struct take_impl;
+template<typename Integral, typename List> struct take 
+  : public take_impl<Integral, List, empty_nlist> {};
 
-template<typename... Currently, typename... UpTo, typename... Before>
-struct take_impl< nlist<Currently...>, nlist<UpTo...>, 
-                  nlist<Before...>, true > {
-  typedef nlist<Before...> type;
-//  print< nlist<Before...> > asdf;
+template<typename Integral, typename List, typename Accum>
+struct take_impl
+  : take_impl< typename boost::mpl::prior< Integral >::type
+               , typename tail< List >::type
+               , typename nl::concat< Accum, nlist< typename head< List >::type > >::type >
+{};
+
+template<typename List, typename Accum>
+struct take_impl< boost::mpl::size_t< 0 >, List, Accum > {
+  typedef Accum type;
 };
 
-template<typename... Currently, typename... UpTo, typename... Before> 
-struct take_impl<nlist<Currently...>, 
-                 nlist<UpTo...>, nlist<Before...>, false >
-  : public take_impl< typename tail< nlist<Currently...> >::type
-                      , nlist<UpTo...>
-                      , typename concat< nlist<Before...>, 
-                                         nlist< typename head< nlist<Currently...> >::type > >::type
-                       , boost::is_same<
-                          typename tail< nlist<Currently...> >::type
-                        , nlist<UpTo...> >::type::value
-                      > {};
+// old take_impl. This actually does not behave like one would expect
+// take to behave, but the implementation can still be good for
+// iterator debugging.
 
-template<typename, typename> struct take;
-template<typename... Start, typename... End>
-struct take< nlist<Start...>, nlist<End...> > 
-  : public take_impl< nlist<Start...>
-                      , nlist<End...>
-                      , empty_nlist
-                      , boost::is_same< nlist<Start...>, nlist<End...> >::value > {
-  
-};
+// template<typename... Currently, typename... UpTo, typename... Before>
+// struct take_impl< nlist<Currently...>, nlist<UpTo...>, 
+//                   nlist<Before...>, true > {
+//   typedef nlist<Before...> type;
+// };
 
-} // nlist
+// template<typename... Currently, typename... UpTo, typename... Before> 
+// struct take_impl<nlist<Currently...>, 
+//                  nlist<UpTo...>, nlist<Before...>, false >
+//   : public take_impl< typename tail< nlist<Currently...> >::type
+//                       , nlist<UpTo...>
+//                       , typename concat< nlist<Before...>, 
+//                                          nlist< typename head< nlist<Currently...> >::type > >::type
+//                        , boost::is_same<
+//                           typename tail< nlist<Currently...> >::type
+//                         , nlist<UpTo...> >::type::value
+//                       > {};
+
+// template<typename, typename> struct take;
+// template<typename... Start, typename... End>
+// struct take< nlist<Start...>, nlist<End...> > 
+//   : public take_impl< nlist<Start...>
+//                       , nlist<End...>
+//                       , empty_nlist
+//                       , boost::is_same< nlist<Start...>, nlist<End...> >::value > {
+// };
+
+} // nl
 
 namespace boost { namespace mpl {
 
@@ -136,15 +154,24 @@ struct size_impl< nl::nlist_tag > {
   };
 };
 
+template<typename>
+struct empty_impl;
+
 template<>
 struct empty_impl< nl::nlist_tag > {
   template<typename> struct apply;
-
   template<typename... Args>
   struct apply< nl::nlist<Args...> > {
     typedef bool_<false> type;
   };
 };
+
+template<>
+template<>
+struct empty_impl<nl::nlist_tag>::apply< nl::empty_nlist > {
+  typedef bool_<true> type;
+};
+
 
 template<>
 struct front_impl< nl::nlist_tag > {
@@ -218,12 +245,16 @@ struct push_back_impl< nl::nlist_tag > {
 template<>
 struct insert_impl< nl::nlist_tag > {
   template<typename, typename, typename> struct apply;
-  template<typename Iterator, typename T, typename... Args>
-  struct apply<nl::nlist<Args...>, Iterator, T> {
-    typedef typename push_front< Iterator, T>::type newend;
-    typedef typename nl::concat< 
-      typename nl::take< nl::nlist<Args...>, Iterator>::type
-      , newend >::type type;
+  template<typename T, typename... Args, typename... IterArgs>
+  struct apply<nl::nlist<Args...>, nl::nlist<IterArgs...>, T> {
+    // using mpl::size could have benefits
+    typedef typename
+    nl::concat< 
+      typename nl::take< 
+        size_t< sizeof...(Args) - sizeof...(IterArgs) >
+        , nl::nlist<Args...> >::type
+      , typename push_front< nl::nlist<IterArgs...>, T>::type
+      >::type type;
   };
 };
 

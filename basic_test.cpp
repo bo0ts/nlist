@@ -10,6 +10,7 @@
 #include <boost/mpl/clear.hpp>
 #include <boost/mpl/find.hpp>
 #include <boost/mpl/insert.hpp>
+#include <boost/mpl/size_t.hpp>
 
 #include <type_traits>
 
@@ -21,13 +22,25 @@ int main()
   typedef nl::nlist<int, float, char> list;
   typedef nl::nlist<float, char> list2;
 
+  // check take
+  {
+    typedef nl::take< boost::mpl::size_t<1>, list2 >::type taken;
+    static_assert(std::is_same< taken, nlist<float> >::value
+                  , "take1");
+  }
+
+  {
+    typedef nl::take< boost::mpl::size_t<3>, list >::type taken;
+    static_assert(std::is_same< taken, list >::value
+                  , "take1");
+  }
 
   typedef nl::nlist<int> singular_list;
 
   // empty and front
   static_assert(std::is_same< front<list>::type, int >::value, "Front broken");
   static_assert(! empty<list>::type::value, "Not empty");
-  // static_assert(empty<empty_nlist>::type::value, "empty_nlist not empty");
+  static_assert(empty<empty_nlist>::type::value, "empty_nlist not empty");
 
   //size
   static_assert(size<list>::type::value == 3, "list size is not 3");
@@ -56,14 +69,13 @@ int main()
   // push_back 
   typedef nl::nlist<int, float> C;
   static_assert(std::is_same< push_back<C, char>::type, A >::value, "push_back");
-//  static_assert(std::is_same< pop_back<A>::type, B >::value, "pop_front");
+//  static_assert(std::is_same< pop_back<A>::type, B >::value, "pop_back");
 
   // clear
   static_assert(std::is_same< clear<B>::type, empty_nlist >::value, "clear");
   static_assert(std::is_same< clear<empty_nlist>::type, empty_nlist >::value, "clear");
 
   // insert
-
   typedef find< B, float >::type pos;
 
   typedef insert< B, pos, int >::type D;
